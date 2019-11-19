@@ -164,8 +164,6 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
                     return None;
                 }
 
-                let res: Vec<T> = form[*pre..form_len - *suf].to_vec();
-
                 let right = match right {
                     Some(right) => match right.apply(&form[form_len - *suf..]) {
                         Some(right) => right,
@@ -181,7 +179,7 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
                     None => vec![],
                 };
 
-                left.extend(res);
+                left.extend(form[*pre..form_len - *suf].iter().cloned());
                 left.extend(right);
                 Some(left)
             }
