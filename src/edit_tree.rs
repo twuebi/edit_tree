@@ -168,23 +168,17 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
                     return None;
                 }
 
-                let right = match right {
-                    Some(right) => match right.apply(&form[form_len - *suf..]) {
-                        Some(right) => right,
-                        _ => return None,
-                    },
-                    None => vec![],
-                };
                 let mut left = match left {
-                    Some(left) => match left.apply(&form[..*pre]) {
-                        Some(left) => left,
-                        _ => return None,
-                    },
+                    Some(left) => left.apply(&form[..*pre])?,
                     None => vec![],
                 };
 
                 left.extend(form[*pre..form_len - *suf].iter().cloned());
-                left.extend(right);
+
+                if let Some(right) = right {
+                    left.extend(right.apply(&form[form_len - *suf..])?)
+                }
+
                 Some(left)
             }
 
