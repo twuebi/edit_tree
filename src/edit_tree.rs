@@ -16,10 +16,7 @@ lazy_static! {
 
 /// Recursively builds an edit tree by applying itself to pre and suffix of the longest common substring.
 ///
-fn build_tree<T: PartialEq + Eq + Clone + Debug>(
-    form_ch: &[T],
-    lem_ch: &[T],
-) -> Option<Box<TreeNode<T>>> {
+fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<Box<TreeNode<T>>> {
     if form_ch.is_empty() && lem_ch.is_empty() {
         return None;
     }
@@ -45,7 +42,7 @@ fn build_tree<T: PartialEq + Eq + Clone + Debug>(
 
 /// Enum representing a `TreeNode` of an `Graph<TreeNode<T>,Place>`.
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Serialize, Deserialize)]
-pub enum TreeNode<T: PartialEq + Eq + Clone + Debug> {
+pub enum TreeNode<T> {
     MatchNode {
         pre: usize,
         suf: usize,
@@ -61,7 +58,7 @@ pub enum TreeNode<T: PartialEq + Eq + Clone + Debug> {
 
 impl<T> TreeNode<T>
 where
-    T: PartialEq + Eq + Clone + Debug,
+    T: PartialEq + Eq + Clone,
 {
     /// Returns a graph representing an edit tree to derive `b` from `a`.
     ///
