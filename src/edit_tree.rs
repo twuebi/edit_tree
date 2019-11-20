@@ -14,14 +14,6 @@ lazy_static! {
     static ref MEASURE: LCS = { LCS::new(1, 1) };
 }
 
-/// Returns a graph representing an edit tree to derive `b` from `a`.
-///
-/// CAUTION when using with stringy types. UTF-8 multi byte chars will not be treated well. Consider
-/// passing in &[char] instead.
-pub fn get_graph<T: PartialEq + Eq + Clone + Debug>(a: &[T], b: &[T]) -> TreeNode<T> {
-    *build_tree(a, b).unwrap()
-}
-
 /// Recursively builds an edit tree by applying itself to pre and suffix of the longest common substring.
 ///
 fn build_tree<T: PartialEq + Eq + Clone + Debug>(
@@ -65,6 +57,20 @@ pub enum TreeNode<T: PartialEq + Eq + Clone + Debug> {
         replacee: Vec<T>,
         replacement: Vec<T>,
     },
+}
+
+impl<T> TreeNode<T>
+where
+    T: PartialEq + Eq + Clone + Debug,
+{
+    /// Returns a graph representing an edit tree to derive `b` from `a`.
+    ///
+    /// **Caution:** when using with stringy types. UTF-8 multi byte
+    /// chars will not be treated well. Consider passing in &[char]
+    /// instead.
+    pub fn create_tree(a: &[T], b: &[T]) -> Self {
+        *build_tree(a, b).unwrap()
+    }
 }
 
 /// Struct representing a continuous match between two sequences.
@@ -217,18 +223,18 @@ impl<'a, T: PartialEq + Eq + Clone + Debug> Display for TreeNode<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{get_graph, Apply, ToLowerCharVec, TreeNode};
+    use super::{Apply, ToLowerCharVec, TreeNode};
     use std::collections::HashSet;
 
     #[test]
     fn test_graph_equality_outcome() {
         let a = "hates".to_lower_char_vec();
         let b = "hate".to_lower_char_vec();
-        let g = get_graph(a.as_slice(), b.as_slice());
+        let g = TreeNode::create_tree(a.as_slice(), b.as_slice());
 
         let a = "loves".to_lower_char_vec();
         let b = "love".to_lower_char_vec();
-        let g1 = get_graph(a.as_slice(), b.as_slice());
+        let g1 = TreeNode::create_tree(a.as_slice(), b.as_slice());
 
         let f = "loves".to_lower_char_vec();
         let f1 = "hates".to_lower_char_vec();
@@ -242,11 +248,11 @@ mod tests {
 
     #[test]
     fn test_graph_equality_outcome_2() {
-        let g = get_graph(
+        let g = TreeNode::create_tree(
             &"machen".to_lower_char_vec(),
             &"gemacht".to_lower_char_vec(),
         );
-        let g1 = get_graph(
+        let g1 = TreeNode::create_tree(
             &"lachen".to_lower_char_vec(),
             &"gelacht".to_lower_char_vec(),
         );
@@ -265,11 +271,11 @@ mod tests {
     fn test_graph_equality_outcome_3() {
         let a = "aaaaaaaaen".to_lower_char_vec();
         let b = "geaaaaaaaat".to_lower_char_vec();
-        let g = get_graph(&a, &b);
+        let g = TreeNode::create_tree(&a, &b);
 
         let a = "lachen".to_lower_char_vec();
         let b = "gelacht".to_lower_char_vec();
-        let g1 = get_graph(&a, &b);
+        let g1 = TreeNode::create_tree(&a, &b);
 
         let f = "lachen".to_lower_char_vec();
         let f1 = "aaaaaaaaen".to_lower_char_vec();
@@ -286,25 +292,25 @@ mod tests {
         let mut set: HashSet<TreeNode<char>> = HashSet::default();
         let a = "abc".to_lower_char_vec();
         let b = "ab".to_lower_char_vec();
-        let g1 = get_graph(&a, &b);
+        let g1 = TreeNode::create_tree(&a, &b);
 
         let a = "aaa".to_lower_char_vec();
         let b = "aa".to_lower_char_vec();
-        let g2 = get_graph(&a, &b);
+        let g2 = TreeNode::create_tree(&a, &b);
 
         let a = "cba".to_lower_char_vec();
         let b = "ba".to_lower_char_vec();
-        let g3 = get_graph(&a, &b);
-        let g4 = get_graph(&a, &b);
+        let g3 = TreeNode::create_tree(&a, &b);
+        let g4 = TreeNode::create_tree(&a, &b);
 
         let a = "aaa".to_lower_char_vec();
         let b = "aac".to_lower_char_vec();
-        let g5 = get_graph(&a, &b);
+        let g5 = TreeNode::create_tree(&a, &b);
 
         let a = "dec".to_lower_char_vec();
         let b = "decc".to_lower_char_vec();
-        let g6 = get_graph(&a, &a);
-        let g7 = get_graph(&a, &b);
+        let g6 = TreeNode::create_tree(&a, &a);
+        let g7 = TreeNode::create_tree(&a, &b);
 
         set.insert(g1);
         assert_eq!(set.len(), 1);
@@ -370,18 +376,18 @@ mod tests {
         let a = "die".to_lower_char_vec();
         let b = "das".to_lower_char_vec();
         let c = "die".to_lower_char_vec();
-        let g = get_graph(a.as_slice(), b.as_slice());
+        let g = TreeNode::create_tree(a.as_slice(), b.as_slice());
         assert!(g.apply(&c).is_some());
     }
     #[test]
     fn test_graphs_inapplicable() {
-        let g = get_graph(
+        let g = TreeNode::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "abc".to_lower_char_vec().as_slice(),
         );
         assert!(g.apply(&"abc".to_lower_char_vec().as_slice()).is_none());
 
-        let g = get_graph(
+        let g = TreeNode::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "efg".to_lower_char_vec().as_slice(),
         );
