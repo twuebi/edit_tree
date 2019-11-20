@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Error, Formatter};
-use std::hash::Hash;
 
 use lazy_static::lazy_static;
 use seqalign::measures::LCSOp;
