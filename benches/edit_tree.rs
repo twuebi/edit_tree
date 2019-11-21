@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use edit_tree::{Apply, ToLowerCharVec, TreeNode};
+use edit_tree::{Apply, EditTree, ToLowerCharVec};
 
 extern crate test;
 
@@ -49,7 +49,7 @@ pub fn bench_apply_graph(b: &mut Bencher) {
         .map(|(form, lemma)| {
             edit_tree::get_graph(&form.to_lower_char_vec(), &lemma.to_lower_char_vec())
         })
-        .collect::<Vec<TreeNode<char>>>();
+        .collect::<Vec<EditTree<char>>>();
     for (form, tree) in FORM.iter().zip(&trees) {
         b.iter(|| {
             black_box(tree.apply(&form.to_lower_char_vec()));

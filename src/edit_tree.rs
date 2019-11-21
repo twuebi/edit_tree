@@ -16,12 +16,12 @@ lazy_static! {
 
 /// Enum representing a `TreeNode` of an `Graph<TreeNode<T>,Place>`.
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Serialize, Deserialize)]
-pub enum TreeNode<T> {
+pub enum EditTree<T> {
     MatchNode {
         pre: usize,
         suf: usize,
-        left: Option<Box<TreeNode<T>>>,
-        right: Option<Box<TreeNode<T>>>,
+        left: Option<Box<EditTree<T>>>,
+        right: Option<Box<EditTree<T>>>,
     },
 
     ReplaceNode {
@@ -30,7 +30,7 @@ pub enum TreeNode<T> {
     },
 }
 
-impl<T> TreeNode<T>
+impl<T> EditTree<T>
 where
     T: PartialEq + Eq + Clone,
 {
@@ -110,14 +110,14 @@ fn longest_match(script: &[IndexedOperation<LCSOp>]) -> Option<LCSMatch> {
 }
 
 /// Recursively builds an edit tree by applying itself to pre and suffix of the longest common substring.
-fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<Box<TreeNode<T>>> {
+fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<Box<EditTree<T>>> {
     if form_ch.is_empty() && lem_ch.is_empty() {
         return None;
     }
 
     let alignment = MEASURE.align(&form_ch, &lem_ch);
     let root = match longest_match(&alignment.edit_script()[..]) {
-        Some(m) => TreeNode::MatchNode {
+        Some(m) => EditTree::MatchNode {
             pre: m.start_src,
             suf: (form_ch.len() - m.start_src) - m.length,
             left: build_tree(&form_ch[..m.start_src], &lem_ch[..m.start_targ]),
@@ -126,7 +126,7 @@ fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<
                 &lem_ch[m.start_targ + m.length..],
             ),
         },
-        None => TreeNode::ReplaceNode {
+        None => EditTree::ReplaceNode {
             replacee: form_ch.to_vec(),
             replacement: lem_ch.to_vec(),
         },
@@ -139,13 +139,13 @@ pub trait Apply<T: PartialEq> {
     fn apply(&self, form: &[T]) -> Option<Vec<T>>;
 }
 
-impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
+impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for EditTree<T> {
     /// Recursively applies the nodes stored in the edit tree. Returns `None` if the tree is not applicable to
     /// `form`.
     fn apply(&self, form: &[T]) -> Option<Vec<T>> {
         let form_len = form.len();
         match self {
-            TreeNode::MatchNode {
+            EditTree::MatchNode {
                 pre,
                 suf,
                 left,
@@ -169,7 +169,7 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
                 Some(left)
             }
 
-            TreeNode::ReplaceNode {
+            EditTree::ReplaceNode {
                 ref replacee,
                 ref replacement,
             } => {
@@ -183,14 +183,14 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for TreeNode<T> {
     }
 }
 
-impl<'a, T: PartialEq + Eq + Clone + Debug> Display for TreeNode<T> {
+impl<'a, T: PartialEq + Eq + Clone + Debug> Display for EditTree<T> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match self {
-            TreeNode::ReplaceNode {
+            EditTree::ReplaceNode {
                 replacee,
                 replacement,
             } => f.write_str(&format!("r('{:?}''{:?}')", replacee, replacement,)),
-            TreeNode::MatchNode {
+            EditTree::MatchNode {
                 pre,
                 suf,
                 left,
@@ -202,7 +202,7 @@ impl<'a, T: PartialEq + Eq + Clone + Debug> Display for TreeNode<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Apply, TreeNode};
+    use super::{Apply, EditTree};
     use crate::ToLowerCharVec;
     use std::collections::HashSet;
 
@@ -210,11 +210,11 @@ mod tests {
     fn test_graph_equality_outcome() {
         let a = "hates".to_lower_char_vec();
         let b = "hate".to_lower_char_vec();
-        let g = TreeNode::create_tree(a.as_slice(), b.as_slice());
+        let g = EditTree::create_tree(a.as_slice(), b.as_slice());
 
         let a = "loves".to_lower_char_vec();
         let b = "love".to_lower_char_vec();
-        let g1 = TreeNode::create_tree(a.as_slice(), b.as_slice());
+        let g1 = EditTree::create_tree(a.as_slice(), b.as_slice());
 
         let f = "loves".to_lower_char_vec();
         let f1 = "hates".to_lower_char_vec();
@@ -228,11 +228,11 @@ mod tests {
 
     #[test]
     fn test_graph_equality_outcome_2() {
-        let g = TreeNode::create_tree(
+        let g = EditTree::create_tree(
             &"machen".to_lower_char_vec(),
             &"gemacht".to_lower_char_vec(),
         );
-        let g1 = TreeNode::create_tree(
+        let g1 = EditTree::create_tree(
             &"lachen".to_lower_char_vec(),
             &"gelacht".to_lower_char_vec(),
         );
@@ -251,11 +251,11 @@ mod tests {
     fn test_graph_equality_outcome_3() {
         let a = "aaaaaaaaen".to_lower_char_vec();
         let b = "geaaaaaaaat".to_lower_char_vec();
-        let g = TreeNode::create_tree(&a, &b);
+        let g = EditTree::create_tree(&a, &b);
 
         let a = "lachen".to_lower_char_vec();
         let b = "gelacht".to_lower_char_vec();
-        let g1 = TreeNode::create_tree(&a, &b);
+        let g1 = EditTree::create_tree(&a, &b);
 
         let f = "lachen".to_lower_char_vec();
         let f1 = "aaaaaaaaen".to_lower_char_vec();
@@ -269,28 +269,28 @@ mod tests {
 
     #[test]
     fn test_graph_equality_and_applicability() {
-        let mut set: HashSet<TreeNode<char>> = HashSet::default();
+        let mut set: HashSet<EditTree<char>> = HashSet::default();
         let a = "abc".to_lower_char_vec();
         let b = "ab".to_lower_char_vec();
-        let g1 = TreeNode::create_tree(&a, &b);
+        let g1 = EditTree::create_tree(&a, &b);
 
         let a = "aaa".to_lower_char_vec();
         let b = "aa".to_lower_char_vec();
-        let g2 = TreeNode::create_tree(&a, &b);
+        let g2 = EditTree::create_tree(&a, &b);
 
         let a = "cba".to_lower_char_vec();
         let b = "ba".to_lower_char_vec();
-        let g3 = TreeNode::create_tree(&a, &b);
-        let g4 = TreeNode::create_tree(&a, &b);
+        let g3 = EditTree::create_tree(&a, &b);
+        let g4 = EditTree::create_tree(&a, &b);
 
         let a = "aaa".to_lower_char_vec();
         let b = "aac".to_lower_char_vec();
-        let g5 = TreeNode::create_tree(&a, &b);
+        let g5 = EditTree::create_tree(&a, &b);
 
         let a = "dec".to_lower_char_vec();
         let b = "decc".to_lower_char_vec();
-        let g6 = TreeNode::create_tree(&a, &a);
-        let g7 = TreeNode::create_tree(&a, &b);
+        let g6 = EditTree::create_tree(&a, &a);
+        let g7 = EditTree::create_tree(&a, &b);
 
         set.insert(g1);
         assert_eq!(set.len(), 1);
@@ -356,18 +356,18 @@ mod tests {
         let a = "die".to_lower_char_vec();
         let b = "das".to_lower_char_vec();
         let c = "die".to_lower_char_vec();
-        let g = TreeNode::create_tree(a.as_slice(), b.as_slice());
+        let g = EditTree::create_tree(a.as_slice(), b.as_slice());
         assert!(g.apply(&c).is_some());
     }
     #[test]
     fn test_graphs_inapplicable() {
-        let g = TreeNode::create_tree(
+        let g = EditTree::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "abc".to_lower_char_vec().as_slice(),
         );
         assert!(g.apply(&"abc".to_lower_char_vec().as_slice()).is_none());
 
-        let g = TreeNode::create_tree(
+        let g = EditTree::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "efg".to_lower_char_vec().as_slice(),
         );
