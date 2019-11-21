@@ -1,5 +1,5 @@
 pub mod edit_tree;
-pub use crate::edit_tree::{Apply, TreeNode};
+pub use crate::edit_tree::{Apply, EditTree};
 
 // Utility trait to retrieve a lower-cased `Vec<char>`.
 pub trait ToLowerCharVec {
