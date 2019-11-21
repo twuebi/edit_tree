@@ -14,32 +14,6 @@ lazy_static! {
     static ref MEASURE: LCS = { LCS::new(1, 1) };
 }
 
-/// Recursively builds an edit tree by applying itself to pre and suffix of the longest common substring.
-///
-fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<Box<TreeNode<T>>> {
-    if form_ch.is_empty() && lem_ch.is_empty() {
-        return None;
-    }
-
-    let alignment = MEASURE.align(&form_ch, &lem_ch);
-    let root = match longest_match(&alignment.edit_script()[..]) {
-        Some(m) => TreeNode::MatchNode {
-            pre: m.start_src,
-            suf: (form_ch.len() - m.start_src) - m.length,
-            left: build_tree(&form_ch[..m.start_src], &lem_ch[..m.start_targ]),
-            right: build_tree(
-                &form_ch[m.start_src + m.length..],
-                &lem_ch[m.start_targ + m.length..],
-            ),
-        },
-        None => TreeNode::ReplaceNode {
-            replacee: form_ch.to_vec(),
-            replacement: lem_ch.to_vec(),
-        },
-    };
-    Some(Box::new(root))
-}
-
 /// Enum representing a `TreeNode` of an `Graph<TreeNode<T>,Place>`.
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Serialize, Deserialize)]
 pub enum TreeNode<T> {
@@ -60,7 +34,7 @@ impl<T> TreeNode<T>
 where
     T: PartialEq + Eq + Clone,
 {
-    /// Returns a graph representing an edit tree to derive `b` from `a`.
+    /// Returns a edit tree specifying how to derive `b` from `a`.
     ///
     /// **Caution:** when using with stringy types. UTF-8 multi byte
     /// chars will not be treated well. Consider passing in &[char]
@@ -135,15 +109,29 @@ fn longest_match(script: &[IndexedOperation<LCSOp>]) -> Option<LCSMatch> {
     }
 }
 
-// Utility trait to convert strings to a vec containing lower cased chars
-pub trait ToLowerCharVec {
-    fn to_lower_char_vec(&self) -> Vec<char>;
-}
-
-impl<'a> ToLowerCharVec for &'a str {
-    fn to_lower_char_vec(&self) -> Vec<char> {
-        self.to_lowercase().chars().collect()
+/// Recursively builds an edit tree by applying itself to pre and suffix of the longest common substring.
+fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<Box<TreeNode<T>>> {
+    if form_ch.is_empty() && lem_ch.is_empty() {
+        return None;
     }
+
+    let alignment = MEASURE.align(&form_ch, &lem_ch);
+    let root = match longest_match(&alignment.edit_script()[..]) {
+        Some(m) => TreeNode::MatchNode {
+            pre: m.start_src,
+            suf: (form_ch.len() - m.start_src) - m.length,
+            left: build_tree(&form_ch[..m.start_src], &lem_ch[..m.start_targ]),
+            right: build_tree(
+                &form_ch[m.start_src + m.length..],
+                &lem_ch[m.start_targ + m.length..],
+            ),
+        },
+        None => TreeNode::ReplaceNode {
+            replacee: form_ch.to_vec(),
+            replacement: lem_ch.to_vec(),
+        },
+    };
+    Some(Box::new(root))
 }
 
 /// Trait to apply an edit tree to a given form.
@@ -214,7 +202,8 @@ impl<'a, T: PartialEq + Eq + Clone + Debug> Display for TreeNode<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Apply, ToLowerCharVec, TreeNode};
+    use super::{Apply, TreeNode};
+    use crate::ToLowerCharVec;
     use std::collections::HashSet;
 
     #[test]
