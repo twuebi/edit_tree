@@ -3,8 +3,13 @@ name = "edit_tree"
 version = "0.1.0"
 authors = ["Tobias Pütz <tobias.puetz@uni-tuebingen.de>"]
 edition = "2018"
+license-file = "LICENSE.md"
+description = "Edit trees in rust."
+keywords = ["lemmatization","sequence transduction","transduction","alignment"]
+repository = "https://github.com/twuebi/edit_tree"
+documentation = "https://github.com/twuebi/edit_tree"
+homepage = "https://github.com/twuebi/edit_tree"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "edit_tree"
 
