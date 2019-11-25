@@ -1,5 +1,7 @@
+use std::cmp::Eq;
 use std::cmp::Ordering;
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt;
+use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use seqalign::measures::LCSOp;
@@ -8,7 +10,6 @@ use seqalign::op::IndexedOperation;
 use seqalign::Align;
 use serde;
 use serde::{Deserialize, Serialize};
-use std::cmp::Eq;
 
 lazy_static! {
     static ref MEASURE: LCS = { LCS::new(1, 1) };
@@ -41,6 +42,41 @@ where
     /// instead.
     pub fn create_tree(a: &[T], b: &[T]) -> Self {
         *build_tree(a, b).unwrap()
+    }
+
+    /// Returns a s-String representation of the EditTree.
+    ///
+    /// `format_vec` defines how to transform the `Vec<T>` of a `ReplaceNode` into a
+    /// `String`. This is useful when implementing `Display` for your own types where
+    /// conversion to `String` may not be straight forward.
+    pub fn pretty_print(&self, format_vec: impl (Fn(&[T]) -> String) + Copy) -> String {
+        match self {
+            EditTree::MatchNode {
+                pre,
+                suf,
+                left,
+                right,
+            } => {
+                let left_str = left
+                    .as_ref()
+                    .map(|left| left.pretty_print(format_vec))
+                    .unwrap_or_else(|| "()".to_string());
+                let right_str = right
+                    .as_ref()
+                    .map(|right| right.pretty_print(format_vec))
+                    .unwrap_or_else(|| "()".to_string());
+
+                format!("(match {} {} {} {})", pre, suf, left_str, right_str)
+            }
+            EditTree::ReplaceNode {
+                replacee,
+                replacement,
+            } => format!(
+                "(replace \"{}\" \"{}\")",
+                format_vec(replacee),
+                format_vec(replacement),
+            ),
+        }
     }
 }
 
@@ -183,20 +219,13 @@ impl<T: PartialEq + Eq + Clone + Debug> Apply<T> for EditTree<T> {
     }
 }
 
-impl<'a, T: PartialEq + Eq + Clone + Debug> Display for EditTree<T> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        match self {
-            EditTree::ReplaceNode {
-                replacee,
-                replacement,
-            } => f.write_str(&format!("r('{:?}''{:?}')", replacee, replacement,)),
-            EditTree::MatchNode {
-                pre,
-                suf,
-                left,
-                right,
-            } => f.write_str(&format!("({:?}p{}s{:?}{})", left, pre, right, suf)),
-        }
+impl fmt::Display for EditTree<char> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.pretty_print(|chars: &[char]| chars.iter().collect::<String>())
+        )
     }
 }
 
@@ -372,5 +401,15 @@ mod tests {
             "efg".to_lower_char_vec().as_slice(),
         );
         assert!(g.apply(&"efg".to_lower_char_vec().as_slice()).is_none());
+    }
+
+    #[test]
+    fn display_edit_tree() {
+        let tree = EditTree::create_tree(&['l', 'o', 'o', 'p', 't'], &['l', 'o', 'p', 'e', 'n']);
+
+        assert_eq!(
+            tree.to_string(),
+            "(match 0 3 () (match 1 1 (replace \"o\" \"\") (replace \"t\" \"en\")))"
+        );
     }
 }
