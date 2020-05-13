@@ -8,7 +8,6 @@ use seqalign::measures::LCSOp;
 use seqalign::measures::LCS;
 use seqalign::op::IndexedOperation;
 use seqalign::Align;
-use serde;
 use serde::{Deserialize, Serialize};
 
 lazy_static! {
