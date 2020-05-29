@@ -39,8 +39,8 @@ where
     /// **Caution:** when using with stringy types. UTF-8 multi byte
     /// chars will not be treated well. Consider passing in &[char]
     /// instead.
-    pub fn create_tree(a: &[T], b: &[T]) -> Self {
-        *build_tree(a, b).unwrap()
+    pub fn create_tree(a: &[T], b: &[T]) -> Option<Self> {
+        build_tree(a, b).map(|tree| *tree)
     }
 
     /// Returns a s-String representation of the EditTree.
@@ -238,11 +238,11 @@ mod tests {
     fn test_graph_equality_outcome() {
         let a = "hates".to_lower_char_vec();
         let b = "hate".to_lower_char_vec();
-        let g = EditTree::create_tree(a.as_slice(), b.as_slice());
+        let g = EditTree::create_tree(a.as_slice(), b.as_slice()).unwrap();
 
         let a = "loves".to_lower_char_vec();
         let b = "love".to_lower_char_vec();
-        let g1 = EditTree::create_tree(a.as_slice(), b.as_slice());
+        let g1 = EditTree::create_tree(a.as_slice(), b.as_slice()).unwrap();
 
         let f = "loves".to_lower_char_vec();
         let f1 = "hates".to_lower_char_vec();
@@ -259,11 +259,13 @@ mod tests {
         let g = EditTree::create_tree(
             &"machen".to_lower_char_vec(),
             &"gemacht".to_lower_char_vec(),
-        );
+        )
+        .unwrap();
         let g1 = EditTree::create_tree(
             &"lachen".to_lower_char_vec(),
             &"gelacht".to_lower_char_vec(),
-        );
+        )
+        .unwrap();
 
         let f = "machen".to_lower_char_vec();
         let f1 = "lachen".to_lower_char_vec();
@@ -279,11 +281,11 @@ mod tests {
     fn test_graph_equality_outcome_3() {
         let a = "aaaaaaaaen".to_lower_char_vec();
         let b = "geaaaaaaaat".to_lower_char_vec();
-        let g = EditTree::create_tree(&a, &b);
+        let g = EditTree::create_tree(&a, &b).unwrap();
 
         let a = "lachen".to_lower_char_vec();
         let b = "gelacht".to_lower_char_vec();
-        let g1 = EditTree::create_tree(&a, &b);
+        let g1 = EditTree::create_tree(&a, &b).unwrap();
 
         let f = "lachen".to_lower_char_vec();
         let f1 = "aaaaaaaaen".to_lower_char_vec();
@@ -300,25 +302,25 @@ mod tests {
         let mut set: HashSet<EditTree<char>> = HashSet::default();
         let a = "abc".to_lower_char_vec();
         let b = "ab".to_lower_char_vec();
-        let g1 = EditTree::create_tree(&a, &b);
+        let g1 = EditTree::create_tree(&a, &b).unwrap();
 
         let a = "aaa".to_lower_char_vec();
         let b = "aa".to_lower_char_vec();
-        let g2 = EditTree::create_tree(&a, &b);
+        let g2 = EditTree::create_tree(&a, &b).unwrap();
 
         let a = "cba".to_lower_char_vec();
         let b = "ba".to_lower_char_vec();
-        let g3 = EditTree::create_tree(&a, &b);
-        let g4 = EditTree::create_tree(&a, &b);
+        let g3 = EditTree::create_tree(&a, &b).unwrap();
+        let g4 = EditTree::create_tree(&a, &b).unwrap();
 
         let a = "aaa".to_lower_char_vec();
         let b = "aac".to_lower_char_vec();
-        let g5 = EditTree::create_tree(&a, &b);
+        let g5 = EditTree::create_tree(&a, &b).unwrap();
 
         let a = "dec".to_lower_char_vec();
         let b = "decc".to_lower_char_vec();
-        let g6 = EditTree::create_tree(&a, &a);
-        let g7 = EditTree::create_tree(&a, &b);
+        let g6 = EditTree::create_tree(&a, &a).unwrap();
+        let g7 = EditTree::create_tree(&a, &b).unwrap();
 
         set.insert(g1);
         assert_eq!(set.len(), 1);
@@ -384,7 +386,7 @@ mod tests {
         let a = "die".to_lower_char_vec();
         let b = "das".to_lower_char_vec();
         let c = "die".to_lower_char_vec();
-        let g = EditTree::create_tree(a.as_slice(), b.as_slice());
+        let g = EditTree::create_tree(a.as_slice(), b.as_slice()).unwrap();
         assert!(g.apply(&c).is_some());
     }
     #[test]
@@ -392,19 +394,22 @@ mod tests {
         let g = EditTree::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "abc".to_lower_char_vec().as_slice(),
-        );
+        )
+        .unwrap();
         assert!(g.apply(&"abc".to_lower_char_vec().as_slice()).is_none());
 
         let g = EditTree::create_tree(
             "abcdefg".to_lower_char_vec().as_slice(),
             "efg".to_lower_char_vec().as_slice(),
-        );
+        )
+        .unwrap();
         assert!(g.apply(&"efg".to_lower_char_vec().as_slice()).is_none());
     }
 
     #[test]
     fn display_edit_tree() {
-        let tree = EditTree::create_tree(&['l', 'o', 'o', 'p', 't'], &['l', 'o', 'p', 'e', 'n']);
+        let tree =
+            EditTree::create_tree(&['l', 'o', 'o', 'p', 't'], &['l', 'o', 'p', 'e', 'n']).unwrap();
 
         assert_eq!(
             tree.to_string(),
