@@ -11,7 +11,7 @@ use seqalign::Align;
 use serde::{Deserialize, Serialize};
 
 lazy_static! {
-    static ref MEASURE: LCS = { LCS::new(1, 1) };
+    static ref MEASURE: LCS = LCS::new(1, 1);
 }
 
 /// Enum representing a `TreeNode` of an `Graph<TreeNode<T>,Place>`.
