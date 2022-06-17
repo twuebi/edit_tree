@@ -1,7 +1,7 @@
 [package]
 name = "edit_tree"
-version = "0.2.0"
-authors = ["Tobias Pütz <tobias.puetz@uni-tuebingen.de>"]
+version = "0.2.1"
+authors = ["Tobias Pütz <puetztobias@gmail.com>"]
 edition = "2021"
 license-file = "LICENSE.md"
 description = "Edit trees in rust."
