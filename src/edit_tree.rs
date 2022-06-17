@@ -14,7 +14,8 @@ lazy_static! {
     static ref MEASURE: LCS = LCS::new(1, 1);
 }
 
-/// Enum representing a `TreeNode` of an `Graph<TreeNode<T>,Place>`.
+/// Enum representing either a [EditTree::MatchNode] with a prefix and suffix
+/// length or a [EditTree::ReplaceNode] describing a replace operation.
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Serialize, Deserialize)]
 pub enum EditTree<T> {
     MatchNode {
@@ -80,7 +81,7 @@ where
 }
 
 /// Struct representing a continuous match between two sequences.
-#[derive(Debug, PartialEq, Eq, Hash, Ord)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct LCSMatch {
     start_src: usize,
     start_targ: usize,
@@ -106,11 +107,11 @@ impl PartialOrd for LCSMatch {
     }
 }
 
-/// Returns the start and end index of the longest match. Returns none if no match is found.
+// Returns the start and end index of the longest match. Returns none if no match is found.
 fn longest_match(script: &[IndexedOperation<LCSOp>]) -> Option<LCSMatch> {
     let mut longest = LCSMatch::empty();
 
-    let mut script_slice = &script[..];
+    let mut script_slice = script;
     while !script_slice.is_empty() {
         let op = &script_slice[0];
 
@@ -118,10 +119,10 @@ fn longest_match(script: &[IndexedOperation<LCSOp>]) -> Option<LCSMatch> {
             LCSOp::Match => {
                 let in_start = op.source_idx();
                 let o_start = op.target_idx();
-                let end = match script_slice.iter().position(|x| match x.operation() {
-                    LCSOp::Match => false,
-                    _ => true,
-                }) {
+                let end = match script_slice
+                    .iter()
+                    .position(|x| !matches!(x.operation(), LCSOp::Match))
+                {
                     Some(idx) => idx,
                     None => script_slice.len(),
                 };
@@ -150,7 +151,7 @@ fn build_tree<T: PartialEq + Eq + Clone>(form_ch: &[T], lem_ch: &[T]) -> Option<
         return None;
     }
 
-    let alignment = MEASURE.align(&form_ch, &lem_ch);
+    let alignment = MEASURE.align(form_ch, lem_ch);
     let root = match longest_match(&alignment.edit_script()[..]) {
         Some(m) => EditTree::MatchNode {
             pre: m.start_src,
