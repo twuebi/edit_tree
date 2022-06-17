@@ -14,6 +14,6 @@ homepage = "https://github.com/twuebi/edit_tree"
 name = "edit_tree"
 
 [dependencies]
-lazy_static = "1.1"
+lazy_static = "1.4"
 serde = { version = "1", features = ["derive"] }
 seqalign = "0.2"
