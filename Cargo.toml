@@ -2,7 +2,7 @@
 name = "edit_tree"
 version = "0.2.0"
 authors = ["Tobias Pütz <tobias.puetz@uni-tuebingen.de>"]
-edition = "2018"
+edition = "2021"
 license-file = "LICENSE.md"
 description = "Edit trees in rust."
 keywords = ["lemmatization","sequence","transduction","alignment"]
